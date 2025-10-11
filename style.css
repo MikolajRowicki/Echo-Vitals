@@ -1,0 +1,65 @@
+/* ===== Echo-Vitals Custom Style ===== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+/* App background gradient */
+.stApp {
+    background: linear-gradient(180deg, #e6f0ff 0%, #f9fbff 100%);
+    color: #1a1a1a;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Headings */
+h1, h2, h3 {
+    font-family: 'Poppins', sans-serif;
+    color: #003366;
+}
+
+/* Card containers */
+.card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+/* Buttons */
+div.stButton > button:first-child {
+    background: linear-gradient(90deg, #4c8bf5, #77a7ff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.6em 1.5em;
+    transition: all 0.3s ease;
+}
+div.stButton > button:first-child:hover {
+    background: linear-gradient(90deg, #3a76e0, #5d93ff);
+    transform: translateY(-2px);
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #f4f8ff;
+    border-right: 1px solid #d6e0f5;
+}
+
+/* Info cards */
+.muted {
+    color: #6b7280;
+    font-size: 0.9em;
+}
+
+/* Section dividers */
+hr {
+    border: none;
+    border-top: 1px solid #d6e0f5;
+    margin: 1.5em 0;
+}
+
+/* Add slight hover effects on images and headers */
+img:hover, h1:hover {
+    opacity: 0.95;
+    transition: 0.3s;
+}
