@@ -14,17 +14,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, roc_curve
 import warnings
 warnings.filterwarnings('ignore')
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-import librosa
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import io
 from PIL import Image
 import tempfile
-import os
 
 class ParkinsonVoiceDetector:
     """
