@@ -14,6 +14,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, roc_curve
 import warnings
 warnings.filterwarnings('ignore')
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+import librosa
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+from PIL import Image
+import tempfile
+import os
 
 class ParkinsonVoiceDetector:
     """
@@ -80,42 +91,83 @@ class ParkinsonVoiceDetector:
     
     def spectrogram_to_image(self, S_db, target_size=(600, 600)):
         """
-        Convert spectrogram to RGB image for CNN input.
-        
-        Args:
-            S_db: Spectrogram in dB scale
-            target_size: Target image size (default 600x600 as per paper)
-        
-        Returns:
-            RGB image array normalized to [0, 1]
+        Alternatywna metoda konwersji spektrogramu na obraz RGB.
+        Używa PIL i io.BytesIO zamiast buffer_rgba.
         """
-        # Create figure without displaying
+        # Opcja 1: Użyj BytesIO
         fig, ax = plt.subplots(figsize=(10, 10), dpi=60)
         
         # Display spectrogram
-        img = librosa.display.specshow(S_db, sr=8000, hop_length=128, 
-                                       x_axis='time', y_axis='hz', ax=ax,
-                                       cmap='viridis')
+        librosa.display.specshow(S_db, sr=8000, hop_length=128, 
+                                x_axis='time', y_axis='hz', ax=ax,
+                                cmap='viridis')
         
-        # Remove axes for clean image
+        # Remove axes
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_xlabel('')
         ax.set_ylabel('')
         
-        # Convert to RGB array
-        fig.canvas.draw()
-        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # Zapisz do bufora pamięci
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+        buf.seek(0)
+        
+        # Wczytaj jako PIL Image
+        img = Image.open(buf)
+        
+        # Konwertuj na RGB jeśli jest w innym formacie
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Zmień rozmiar
+        img = img.resize(target_size, Image.Resampling.LANCZOS)
+        
+        # Konwertuj na numpy array
+        image = np.array(img) / 255.0
+        
         plt.close(fig)
-        
-        # Resize to target size
-        image = tf.image.resize(image, target_size)
-        
-        # Normalize to [0, 1]
-        image = image.numpy() / 255.0
+        buf.close()
         
         return image
+
+    def spectrogram_to_image_tempfile(S_db, target_size=(600, 600)):
+        """
+        Alternatywna metoda używająca pliku tymczasowego.
+        Najbardziej niezawodna, ale wolniejsza.
+        """
+        fig, ax = plt.subplots(figsize=(10, 10), dpi=60)
+        
+        # Display spectrogram
+        librosa.display.specshow(S_db, sr=8000, hop_length=128, 
+                                x_axis='time', y_axis='hz', ax=ax,
+                                cmap='viridis')
+        
+        # Remove axes
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        
+        # Zapisz do pliku tymczasowego
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            plt.savefig(tmp_path, bbox_inches='tight', pad_inches=0, dpi=100)
+        
+        plt.close(fig)
+        
+        # Wczytaj obraz
+        img = Image.open(tmp_path)
+        
+        # Konwertuj na RGB
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Zmień rozmiar
+        img = img.resize(target_size, Image.Resampling.LANCZOS)
+        
+        # Konwertuj na numpy array
+        image = np.array(img) / 255.0
     
     def build_model(self):
         """
@@ -512,7 +564,7 @@ if __name__ == "__main__":
     app = ParkinsonDetectorApp("parkinson_voice_model.h5")
     
     # Predict from audio
-    result = app.predict_from_audio("dataset\healthy\AH_064F_7AB034C9-72E4-438B-A9B3-AD7FDA1596C5.wav")
+    result = app.predict_from_audio("dataset/healthy/AH_064F_7AB034C9-72E4-438B-A9B3-AD7FDA1596C5.wav")
     
     # Or predict from spectrogram image
     #result = app.predict_from_image("path/to/spectrogram.jpg")
