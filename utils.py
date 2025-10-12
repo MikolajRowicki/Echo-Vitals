@@ -14,10 +14,10 @@ import os
 
 def display_header():
     with st.container():
-        col1, col2, col3 = st.columns([1, 2, 1])
+        col1, col2, col3 = st.columns([1, 6, 1])
         with col2:
             if os.path.exists("logo.png"):
-                st.image("logo.png", width=620)
+                st.image("logo.png", width=1520)
             else:
                 st.title("🔊 Echo-Vitals")
                 st.markdown("*Advanced Voice Analysis for Health*")
