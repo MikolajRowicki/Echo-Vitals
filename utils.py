@@ -51,23 +51,66 @@ def get_audio_info(data, sr):
     }
 
 def plot_spectrogram(data, sr):
-    """Generate matplotlib figure with log-amplitude spectrogram."""
-    if data.ndim > 1:
-        mono = np.mean(data, axis=1)
-    else:
-        mono = data
-    mono = librosa.util.normalize(mono)
-    S = np.abs(librosa.stft(mono, n_fft=2048, hop_length=512))
-    S_db = librosa.amplitude_to_db(S, ref=np.max)
-    fig, ax = plt.subplots(figsize=(8, 3.8))
-    img = librosa.display.specshow(S_db, sr=sr, hop_length=512,
-                                   x_axis="time", y_axis="hz", ax=ax)
-    ax.set_title("Spectrogram (dB)")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
-    fig.colorbar(img, ax=ax, format="%+2.0f dB")
-    fig.tight_layout()
-    return fig
+    """Generate matplotlib figure with log-amplitude spectrogram safely."""
+
+    # --- Wstępne sprawdzenie ---
+    if data is None:
+        print("⚠️ Brak danych audio (data=None). Pomijam generowanie spektrogramu.")
+        return None
+
+    if not isinstance(data, np.ndarray):
+        print(f"⚠️ Nieprawidłowy typ danych: {type(data)}. Oczekiwano numpy.ndarray.")
+        return None
+
+    if data.size == 0:
+        print("⚠️ Tablica audio jest pusta (len(data) == 0).")
+        return None
+
+    if sr is None or sr <= 0:
+        print(f"⚠️ Nieprawidłowa częstotliwość próbkowania: {sr}")
+        return None
+
+    try:
+        # --- Konwersja do mono ---
+        if data.ndim > 1:
+            mono = np.mean(data, axis=1)
+        else:
+            mono = data
+
+        if mono.size == 0 or np.all(mono == 0):
+            print("⚠️ Sygnał mono jest pusty lub zawiera same zera — brak spektrogramu.")
+            return None
+
+        # --- Normalizacja (bezpieczna) ---
+        try:
+            mono = librosa.util.normalize(mono)
+        except ValueError as e:
+            print(f"⚠️ Błąd normalizacji sygnału: {e}")
+            return None
+
+        # --- Oblicz spektrogram ---
+        S = np.abs(librosa.stft(mono, n_fft=2048, hop_length=512))
+        if S.size == 0:
+            print("⚠️ Wynik STFT jest pusty — brak danych do wizualizacji.")
+            return None
+
+        S_db = librosa.amplitude_to_db(S, ref=np.max)
+
+        # --- Tworzenie wykresu ---
+        fig, ax = plt.subplots(figsize=(8, 3.8))
+        img = librosa.display.specshow(
+            S_db, sr=sr, hop_length=512, x_axis="time", y_axis="hz", ax=ax
+        )
+        ax.set_title("Spectrogram (dB)")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Frequency (Hz)")
+        fig.colorbar(img, ax=ax, format="%+2.0f dB")
+        fig.tight_layout()
+        return fig
+
+    except Exception as e:
+        print(f"❌ Nieoczekiwany błąd podczas generowania spektrogramu: {e}")
+        return None
 
 def _safe_round(val, ndigits=3):
     try:
@@ -311,7 +354,12 @@ def display_audio_info(data, sr, filename=None):
     st.write("---")
     st.subheader("Spectrogram")
     fig = plot_spectrogram(data, sr)
-    st.pyplot(fig)
+
+    if fig is not None:
+        st.pyplot(fig)  # ✅ poprawne użycie
+    else:
+        st.warning("Nie udało się wygenerować spektrogramu (plik audio może być pusty lub uszkodzony).")
+
     st.write("---")
 
 def extract_and_display_features(audio_path, key_suffix):
