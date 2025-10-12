@@ -345,7 +345,7 @@ def extract_and_display_features(audio_path, key_suffix):
             else:
                 st.error(f"Feature extraction failed: {features['error']}")
 
-def analyze_parkinson(detector, audio_path, key_suffix):
+def analyze_parkinson(detector, audio_path, key_suffix, interpreter):
     st.subheader("🏥 Parkinson's Disease Risk Analysis")
     if detector is not None:
         st.write("Analyze the audio for potential Parkinson's disease indicators.")
@@ -364,11 +364,44 @@ def analyze_parkinson(detector, audio_path, key_suffix):
                 st.metric(label="Risk Level", value=results['risk_level'])
             st.info(f"**Recommendation:** {results['recommendation']}")
             st.caption("⚠️ **Disclaimer:** This analysis is for screening purposes only and should not replace professional medical diagnosis. Always consult with a healthcare provider for medical concerns.")
+            # SHAP & LIME Interpretability
+            if interpreter is not None:
+                st.write("---")
+                st.subheader("🔍 Model Interpretability")
+                
+                with st.spinner("Generating SHAP and LIME explanations..."):
+                    try:
+                        # Prepare spectrogram image for interpretation
+                        S_db = detector.create_spectrogram(audio_path)
+                        spectrogram_image = detector.spectrogram_to_image(S_db)
+                        
+                        # Generate SHAP explanation
+                        shap_values, shap_img = interpreter.explain_with_shap(spectrogram_image)
+                        
+                        # Generate LIME explanation  
+                        lime_exp, lime_img = interpreter.explain_with_lime(spectrogram_image)
+                        
+                        # Display explanations
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.subheader("🎯 SHAP Explanation")
+                            st.image(shap_img, use_container_width=True)
+                            st.caption("Hot areas (red) contribute more to Parkinson's prediction")
+                        
+                        with col2:
+                            st.subheader("🔬 LIME Explanation")
+                            st.image(lime_img, use_container_width=True)
+                            st.caption("Red regions support the prediction")
+                            
+                    except Exception as e:
+                        st.error(f"Error generating interpretability plots: {e}")
+        
         else:
             st.error(f"Analysis failed: {results['error']}")
 
 def find_and_display_animal():
-    st.subheader("🦊 What Animal Are You?")
+    st.subheader("🦊 Discover Your Spirit Animal")
     if 'animal_result' not in st.session_state:
         st.session_state.animal_result = None
     if st.button("🎯 Find your animal", key="find_animal"):
@@ -380,8 +413,3 @@ def find_and_display_animal():
     if st.session_state.animal_result:
         animal = st.session_state.animal_result
         st.success(f"Based on your 'aaa' sound, you are most like a **{animal}**!")
-        img_path = f"images/animals/{animal.lower()}.png"
-        if os.path.exists(img_path):
-            st.image(img_path, width=250)
-        else:
-            st.info(f"🐾 Imagine a {animal} here!")
